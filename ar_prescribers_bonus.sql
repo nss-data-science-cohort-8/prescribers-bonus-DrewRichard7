@@ -141,6 +141,88 @@ Hint #2: In order to use the crosstab function, you need to first write a query 
 Hint #3: The sql statement that goes inside of crosstab must be surrounded by single quotes. If the query that you are using also uses single quotes, you'll need to escape them by turning them into double-single quotes.
 */
 
+CREATE EXTENSION tablefunc;
+
+SELECT 
+	generic_name,
+	CASE WHEN LOWER(generic_name) LIKE '%codeine%' THEN 'codeine'
+	WHEN LOWER(generic_name) LIKE '%fentanyl%' THEN 'fentanyl'
+	WHEN LOWER(generic_name) LIKE '%hyrdocodone%' THEN 'hyrdocodone'
+	WHEN LOWER(generic_name) LIKE '%morphine%' THEN 'morphine'
+	WHEN LOWER(generic_name) LIKE '%oxycodone%' THEN 'oxycodone'
+	WHEN LOWER(generic_name) LIKE '%oxymorphone%' THEN 'oxymorphone' 
+	ELSE NULL END AS drug_label
+FROM drug
+GROUP BY generic_name
+ORDER BY drug_label NULLS LAST;
+
+SELECT 
+	p.nppes_provider_city AS city,
+	CASE WHEN LOWER(d.generic_name) LIKE '%codeine%' THEN 'codeine'
+	WHEN LOWER(d.generic_name) LIKE '%fentanyl%' THEN 'fentanyl'
+	WHEN LOWER(d.generic_name) LIKE '%hyrdocodone%' THEN 'hyrdocodone'
+	WHEN LOWER(d.generic_name) LIKE '%morphine%' THEN 'morphine'
+	WHEN LOWER(d.generic_name) LIKE '%oxycodone%' THEN 'oxycodone'
+	WHEN LOWER(d.generic_name) LIKE '%oxymorphone%' THEN 'oxymorphone' 
+	ELSE NULL END AS drug_label,
+	SUM(rx.total_claim_count) AS total_claims
+FROM prescriber AS p
+LEFT JOIN prescription AS rx
+USING(npi)
+LEFT JOIN drug AS d
+USING(drug_name)
+WHERE LOWER(p.nppes_provider_city) IN ('nashville', 'memphis', 'knoxville', 'chattanooga')
+GROUP BY d.generic_name, p.nppes_provider_city
+HAVING 
+    CASE WHEN LOWER(d.generic_name) LIKE '%codeine%' THEN 'codeine'
+    WHEN LOWER(d.generic_name) LIKE '%fentanyl%' THEN 'fentanyl'
+    WHEN LOWER(d.generic_name) LIKE '%hyrdocodone%' THEN 'hyrdocodone'
+    WHEN LOWER(d.generic_name) LIKE '%morphine%' THEN 'morphine'
+    WHEN LOWER(d.generic_name) LIKE '%oxycodone%' THEN 'oxycodone'
+    WHEN LOWER(d.generic_name) LIKE '%oxymorphone%' THEN 'oxymorphone' 
+    ELSE NULL END IS NOT NULL;
+
+
+SELECT * FROM crosstab(
+  'SELECT 
+    p.nppes_provider_city AS city,
+    CASE WHEN LOWER(d.generic_name) LIKE ''%codeine%'' THEN ''codeine''
+    WHEN LOWER(d.generic_name) LIKE ''%fentanyl%'' THEN ''fentanyl''
+    WHEN LOWER(d.generic_name) LIKE ''%hydrocodone%'' THEN ''hydrocodone''
+    WHEN LOWER(d.generic_name) LIKE ''%morphine%'' THEN ''morphine''
+    WHEN LOWER(d.generic_name) LIKE ''%oxycodone%'' THEN ''oxycodone''
+    WHEN LOWER(d.generic_name) LIKE ''%oxymorphone%'' THEN ''oxymorphone'' 
+    ELSE NULL END AS drug_label,
+    SUM(rx.total_claim_count) AS total_claims
+  FROM prescriber AS p
+  LEFT JOIN prescription AS rx
+  USING(npi)
+  LEFT JOIN drug AS d
+  USING(drug_name)
+  WHERE LOWER(p.nppes_provider_city) IN (''nashville'', ''memphis'', ''knoxville'', ''chattanooga'')
+  AND (
+    LOWER(d.generic_name) LIKE ''%codeine%'' OR
+    LOWER(d.generic_name) LIKE ''%fentanyl%'' OR
+    LOWER(d.generic_name) LIKE ''%hydrocodone%'' OR
+    LOWER(d.generic_name) LIKE ''%morphine%'' OR
+    LOWER(d.generic_name) LIKE ''%oxycodone%'' OR
+    LOWER(d.generic_name) LIKE ''%oxymorphone%''
+  )
+  GROUP BY p.nppes_provider_city, drug_label
+  ORDER BY city',
+  'SELECT unnest(ARRAY[''codeine'', ''fentanyl'', ''hydrocodone'', ''morphine'', ''oxycodone'', ''oxymorphone''])'
+) AS (
+  city text,
+  codeine bigint,
+  fentanyl bigint,
+  hydrocodone bigint,
+  morphine bigint,
+  oxycodone bigint,
+  oxymorphone bigint
+);
+
+
+
 
 
 
