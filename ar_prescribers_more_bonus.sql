@@ -167,12 +167,20 @@ ORDER BY overdose_deaths DESC;
 /* 5.
     a. Write a query that finds the total population of Tennessee.*/
 
-
+SELECT SUM(population) AS population_tn
+FROM population;
 
 	
     -- b. Build off of the query that you wrote in part a to write a query that returns for each county that county's name, its population, and the percentage of the total population of Tennessee that is contained in that county.
 
-
+SELECT 
+	f.county AS county,
+	pop.population AS population, 
+	ROUND((pop.population / (SELECT SUM(population) AS population_tn FROM population)) * 100, 2) AS pct_tn
+FROM population AS pop
+INNER JOIN fips_county AS f
+USING(fipscounty)
+ORDER BY f.county;
 
 
 
