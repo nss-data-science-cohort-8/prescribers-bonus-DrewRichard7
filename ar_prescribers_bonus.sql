@@ -110,6 +110,18 @@ ORDER BY p.specialty_description NULLS FIRST;
 
 -- 7. Finally, change your query to use the CUBE function instead of ROLLUP. How does this impact the output?
 
+SELECT p.specialty_description, d.opioid_drug_flag AS opioid_drug_flag, SUM(rx.total_claim_count) AS total_claims
+FROM prescriber AS p
+LEFT JOIN prescription AS rx
+USING(npi)
+LEFT JOIN drug AS d
+USING(drug_name)
+WHERE p.specialty_description IN ('Interventional Pain Management', 'Pain Management')
+GROUP BY CUBE(p.specialty_description, d.opioid_drug_flag)
+ORDER BY p.specialty_description NULLS FIRST;
+
+-- this outputs all possible subsets of the given list
+
 /* 8. In this question, your goal is to create a pivot table showing for each of the 4 largest cities in Tennessee (Nashville, Memphis, Knoxville, and Chattanooga), the total claim count for each of six common types of opioids: Hydrocodone, Oxycodone, Oxymorphone, Morphine, Codeine, and Fentanyl. For the purpose of this question, we will put a drug into one of the six listed categories if it has the category name as part of its generic name. For example, we could count both of "ACETAMINOPHEN WITH CODEINE" and "CODEINE SULFATE" as being "CODEINE" for the purposes of this question.
 
 The end result of this question should be a table formatted like this:
